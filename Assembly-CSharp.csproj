@@ -41,11 +41,13 @@
     <ImplicitlyExpandDesignTimeFacades>false</ImplicitlyExpandDesignTimeFacades>
   </PropertyGroup>
   <ItemGroup>
-     <Compile Include="Assets\ProceduralGeneration\Scripts\ProceduralGeneration.cs" />
+     <Compile Include="Assets\ProceduralGeneration\Scripts\PermutationTable.cs" />
      <Compile Include="Assets\ProceduralGeneration\Scripts\AlgorithmEditor.cs" />
+     <Compile Include="Assets\ProceduralGeneration\Scripts\Worley.cs" />
+     <Compile Include="Assets\ProceduralGeneration\Scripts\INoise.cs" />
+     <Compile Include="Assets\ProceduralGeneration\Scripts\Noise.cs" />
      <Compile Include="Assets\ProceduralGeneration\Scripts\Perlin.cs" />
      <Compile Include="Assets\ProceduralGeneration\Scripts\GenerationAlgorithm.cs" />
-     <Compile Include="Assets\ProceduralGeneration\Scripts\Worley.cs" />
      <Reference Include="UnityEngine">
      <HintPath>D:\DEVUTIL\Unity\2021.3.11f1\Editor\Data\Managed\UnityEngine\UnityEngine.dll</HintPath>
      </Reference>

@@ -1,4 +1,5 @@
 using System;
+using ProceduralNoiseProject;
 using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
@@ -77,10 +78,22 @@ public class AlgorithmEditor : EditorWindow
        var xOffset = EditorGUILayout.FloatField("Coordinate X",currentLayer.XOffset);
        var yOffset = EditorGUILayout.FloatField("Coordinate Y",currentLayer.YOffset);
        var amplitude = Math.Clamp(EditorGUILayout.FloatField("Amplitude",currentLayer.Amplitude),0,1);
-       
+
+       NoiseVariationsGUI();
+
        currentLayer.SetAlgorithmVariables(genType,scale,xOffset,yOffset,amplitude);
    }
 
+   private void NoiseVariationsGUI()
+   {
+       switch (currentLayer.GenerationAlgorithm)
+       {
+           case GenericNoiseGenerationAlgorithm.Worley:
+               Worley.Distance = (Worley.VORONOI_DISTANCE)EditorGUILayout.EnumPopup("Distance Setting",Worley.Distance);
+               Worley.Combination = (Worley.VORONOI_COMBINATION)EditorGUILayout.EnumPopup("Combination Setting",Worley.Combination);
+               break;
+       }
+   }
    private void AllLayersImageGUI()
    {
    } 
@@ -143,20 +156,37 @@ public class AlgorithmEditor : EditorWindow
    void RenderImage()
    {
        var imageSize = proceduralImage.width;
-        var perlinArray = Perlin.Generate(imageSize,currentLayer.Scale,currentLayer.XOffset
-        ,currentLayer.YOffset,currentLayer.Amplitude);
+       var noiseArray = GenerateGenericNoise(imageSize);
         var pixelsInPerlin = new Color[(int)Math.Pow(imageSize,2)];
         for (int y = 0; y < imageSize; y++)
         {
             for (int x = 0; x < imageSize; x++)
             {
-                float sample = perlinArray[x, y];
+                float sample = noiseArray[x, y];
                 pixelsInPerlin[x+(y*imageSize)] = new Color(sample,sample,sample);
             }
         }
         proceduralImage.SetPixels(pixelsInPerlin);
         proceduralImage.Apply();
     }
+
+   float[,] GenerateGenericNoise(int imageSize)
+   {
+       var noiseArray = new float[imageSize,imageSize];
+       switch (currentLayer.GenerationAlgorithm)
+       {
+           case GenericNoiseGenerationAlgorithm.Perlin:
+               noiseArray = Perlin.Generate(imageSize, currentLayer.Scale, currentLayer.XOffset, currentLayer.YOffset,
+                   currentLayer.Amplitude);
+               break;
+           case GenericNoiseGenerationAlgorithm.Worley:
+               noiseArray = Worley.Generate(imageSize, currentLayer.Scale, currentLayer.XOffset, currentLayer.YOffset,
+                   currentLayer.Amplitude,currentlyEditing.seed);
+               break;
+       }
+
+       return noiseArray;
+   }
     void Update()
     {
         RenderImage();

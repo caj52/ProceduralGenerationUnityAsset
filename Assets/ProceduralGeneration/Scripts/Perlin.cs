@@ -117,8 +117,8 @@ public class Perlin
 		{
 			for (int y = 0; y < _size; y++)
 			{
-				float xCoord = _xCoord + x * (_scale/10);
-				float yCoord = _yCoord + y * (_scale/10);
+				var xCoord = _xCoord + x * (_scale/10);
+				var yCoord = _yCoord + y * (_scale/10);
 				map[x,y] += Mathf.Clamp(Generate(xCoord, yCoord,0) * _amplitude,0,1);
 			}
 		}

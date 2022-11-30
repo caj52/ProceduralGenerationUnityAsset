@@ -1,44 +1,49 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.PlayerLoop;
 
 namespace ProceduralNoiseProject
 {
-    public class WorleyNoise
+    public class Worley
     {
+        public enum VORONOI_DISTANCE
+        {
+            EUCLIDIAN,
+            MANHATTAN,
+            CHEBYSHEV
+        }
+
+        public enum VORONOI_COMBINATION
+        {
+            D0,D1_D0,D2_D0
+        }
         private static readonly float[] OFFSET_F = new float[] { -0.5f, 0.5f, 1.5f };
 
         private const float K = 1.0f / 7.0f;
 
         private const float Ko = 3.0f / 7.0f;
 
-        public float Jitter { get; set; }
+        private static float Jitter;
 
-        public int Distance { get; set; }
+        public static VORONOI_DISTANCE Distance;
 
-        public int Combination { get; set; }
+        public static VORONOI_COMBINATION Combination;
 
-        private int Perm { get; set; }
-
-        public WorleyNoise(int seed, float frequency, float jitter, float amplitude = 1.0f)
-        {
-            Frequency = frequency;
-            Amplitude = amplitude;
-            Offset = Vector3.zero;
-            Jitter = jitter;
-
-            Perm = new PermutationTable(1024, 255, seed);
-        }
+        private static PermutationTable Perm { get; set; }
         
+        /// <summary>
+        /// Update the seed.
+        /// </summary>
+        public static void UpdateSeed(int seed)
+        {
+            Perm.Build(seed);
+        }
         /// <summary>
         /// Sample the noise in 2 dimensions.
         /// </summary>
-        public override float Sample2D(float x, float y)
+        static float Generate(float x, float y, float amplitude)
         {
-
-            x = (x + Offset.x) * Frequency;
-            y = (y + Offset.y) * Frequency;
-
             int Pi0 = (int)Mathf.Floor(x);
             int Pi1 = (int)Mathf.Floor(y);
 
@@ -91,81 +96,60 @@ namespace ProceduralNoiseProject
 
             }
 
-            return Combine(F0, F1, F2) * Amplitude;
+            return Combine(F0, F1, F2) * amplitude;
         }
+        public static float[,] Generate(int _size,float _scale,float _xCoord,float _yCoord,float _amplitude, int seed)
+        {
+            Jitter = 1;
+            Perm = new PermutationTable(_size, _size,seed);
+            var map = new float[_size,_size];
 
-        private float Mod(float x, float y)
+            for (var x = 0; x < _size; x++)
+            for (var y = 0; y < _size; y++)
+            {
+                var xCoord = _xCoord + x * (_scale/10);
+                var yCoord = _yCoord + y * (_scale/10);
+                map[x,y] += Generate(xCoord, yCoord,_amplitude);
+            }
+		
+            return map;
+        }
+        private static float Mod(float x, float y)
         {
             return x - y * Mathf.Floor(x / y);
         }
-
-        private float Frac(float v)
+        private static float Frac(float v)
         {
             return v - Mathf.Floor(v);
         }
-
-        private float Distance1(float p1x, float p2x)
+        private static float Distance2(float p1x, float p1y, float p2x, float p2y)
         {
             switch (Distance)
             {
-                case 0:
-                    return (p1x - p2x) * (p1x - p2x);
-
-                case 1:
-                    return Math.Abs(p1x - p2x);
-
-                case 2:
-                    return Math.Abs(p1x - p2x);
-            }
-
-            return 0;
-        }
-
-        private float Distance2(float p1x, float p1y, float p2x, float p2y)
-        {
-            switch (Distance)
-            {
-                case 0:
+                case VORONOI_DISTANCE.EUCLIDIAN:
                     return (p1x - p2x) * (p1x - p2x) + (p1y - p2y) * (p1y - p2y);
 
-                case 1:
+                case VORONOI_DISTANCE.MANHATTAN:
                     return Math.Abs(p1x - p2x) + Math.Abs(p1y - p2y);
 
-                case 2:
+                case VORONOI_DISTANCE.CHEBYSHEV:
                     return Math.Max(Math.Abs(p1x - p2x), Math.Abs(p1y - p2y));
             }
 
             return 0;
         }
-
-        private float Distance3(float p1x, float p1y, float p1z, float p2x, float p2y, float p2z)
+        private static float Combine(float f0, float f1, float f2)
         {
-            switch (Distance)
-            {
-                case 0:
-                    return (p1x - p2x) * (p1x - p2x) + (p1y - p2y) * (p1y - p2y) + (p1z - p2z) * (p1z - p2z);
-
-                case 1:
-                    return Math.Abs(p1x - p2x) + Math.Abs(p1y - p2y) + Math.Abs(p1z - p2z);
-
-                case 2:
-                    return Math.Max(Math.Max(Math.Abs(p1x - p2x), Math.Abs(p1y - p2y)), Math.Abs(p1z - p2z));
-            }
-
-            return 0;
-        }
-
-        private float Combine(float f0, float f1, float f2)
-        {
+            
             switch (Combination)
             {
-                case 0:
+                case VORONOI_COMBINATION.D0:
                     return f0;
 
-                case 1:
+                case VORONOI_COMBINATION.D1_D0:
                     return f1 - f0;
 
-                case 2:
+                case VORONOI_COMBINATION.D2_D0:
                     return f2 - f0;
             }
 

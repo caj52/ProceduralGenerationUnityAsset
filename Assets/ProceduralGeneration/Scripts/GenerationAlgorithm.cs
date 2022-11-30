@@ -7,6 +7,8 @@ public class GenerationAlgorithm : ScriptableObject
     public Vector2Int mapSize = new Vector2Int();
     private List<AlgorithmLayer> _algorithmLayers;
 
+    public int seed = 1;
+
     public GenerationAlgorithm()
     {
         _algorithmLayers = new List<AlgorithmLayer>();
@@ -65,4 +67,5 @@ public enum GenericNoiseGenerationAlgorithm
     Simplex,
     Perlin,
     Worley,
+    Jarnagin
 }
