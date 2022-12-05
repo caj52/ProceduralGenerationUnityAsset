@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using UnityEngine;
 
 public class GenerationAlgorithm : ScriptableObject
@@ -7,8 +9,23 @@ public class GenerationAlgorithm : ScriptableObject
     public Vector2Int mapSize = new Vector2Int();
     private List<AlgorithmLayer> _algorithmLayers;
 
-    public int seed = 1874293764;
+    public string seed = "1874293764";
 
+    public int intSeed;
+
+    public void SetIntSeed()
+    {
+        try
+        {
+            intSeed = int.Parse(seed);
+        }
+        catch
+        {
+            var asciiCharacters= Encoding.ASCII.GetBytes(seed);
+            var returnInt = asciiCharacters.Sum(Convert.ToInt32);
+            intSeed = returnInt;
+        }
+    }
     public GenerationAlgorithm()
     {
         _algorithmLayers = new List<AlgorithmLayer>();

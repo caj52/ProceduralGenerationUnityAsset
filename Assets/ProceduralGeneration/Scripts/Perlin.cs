@@ -109,7 +109,7 @@ public class Perlin
 		return a + x * (b - a);
 	}
 	
-	public static float [,] Generate(float _size,float _scale,float _xCoord,float _yCoord,float _amplitude)
+	public static float [,] Generate(float _size,float _scale,float _xCoord,float _yCoord,float _amplitude, int seed)
 	{
 		float[,] map = new float[(int)_size,(int)_size];
         

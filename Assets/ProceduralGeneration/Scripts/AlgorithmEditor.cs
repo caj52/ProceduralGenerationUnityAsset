@@ -4,11 +4,6 @@ using UnityEditor;
 using UnityEngine;
 #if UNITY_EDITOR
 
-public enum EditorMode
-{
-    AllLayers,
-    SingleLayer
-}
 public class AlgorithmEditor : EditorWindow
 {
     private static AlgorithmEditor editorWindow;
@@ -41,14 +36,22 @@ public class AlgorithmEditor : EditorWindow
    {
        Repaint();
 
+       ////////[SEED [____]]///////////
+       GUILayout.BeginHorizontal(EditorStyles.helpBox); 
+       currentlyEditing.seed = EditorGUILayout.TextField("Seed", currentlyEditing.seed, GUIStyle.none);
+       currentlyEditing.SetIntSeed();
+       GUILayout.EndHorizontal();
+       ///////////////////////////////////
+       
        GUILayout.BeginHorizontal();//1
        GUILayout.Space(95);
        GUILayout.EndHorizontal();//1
        GUILayout.Space(20);
-       
        GUILayout.BeginHorizontal();//3
-       DetailsSection();
+
+       DetailsGUI();
        ImageArea();
+       
        GUILayout.EndHorizontal();//3
    }
 
@@ -58,11 +61,9 @@ public class AlgorithmEditor : EditorWindow
     
        GUILayout.BeginVertical(); //4       
        GUILayout.Space(300);
-       GUILayout.BeginVertical(EditorStyles.helpBox); //4
 
        ImageGUI();
        
-       GUILayout.EndVertical();
        GUILayout.EndVertical();
    }
 
@@ -89,27 +90,20 @@ public class AlgorithmEditor : EditorWindow
                break;
        }
    }
-   private void DetailsSection()
-   {
-       GUILayout.Space(20);
-       
-       GUILayout.BeginVertical(EditorStyles.helpBox,layersRect); //4
-
-       DetailsGUI();
-
-       GUILayout.Space(100);
-       GUILayout.EndVertical(); //4
-   }
    private void DetailsGUI()
    {
+       GUILayout.Space(20);
+       GUILayout.BeginVertical(EditorStyles.helpBox,layersRect); //4
        GUILayout.BeginHorizontal(); //5
        GUILayout.Space(40);
 
+       ////////[ALGORITHM LAYERS]///////////
        GUILayout.BeginHorizontal(EditorStyles.helpBox); //6
        GUILayout.Space(15);
        GUILayout.Label("Algorithm Layers");
        GUILayout.Space(15);
        GUILayout.EndHorizontal();//6
+       ////////////////////////////////////
 
        var algorithmLayers = currentlyEditing.GetAlgorithmLayers();
        var layerCount = algorithmLayers.Count;
@@ -122,17 +116,17 @@ public class AlgorithmEditor : EditorWindow
            
            layerImageRect.position = new Vector2(23, (x * 30) + 60);
            GUI.Box(layerImageRect,proceduralImage);
-
-           GUILayout.Space(300);
-
-           var layerStrength = layer.layerStrength;
-           layerStrength = EditorGUILayout.Slider(layerStrength, 0, 1);
-           layer.SetLayerStrength(layerStrength);
+           
+           var layerStrength = Mathf.RoundToInt(layer.layerStrength * 100);
+           layerStrength = EditorGUILayout.IntSlider(layerStrength, 0, 100);
+           layer.SetLayerStrength(layerStrength / 100f);
 
            GUILayout.EndVertical();//7
        }
 
        GUILayout.EndHorizontal(); //5
+       GUILayout.Space(100);
+       GUILayout.EndVertical(); //4
    }
    void RenderImage()
    {
@@ -158,11 +152,11 @@ public class AlgorithmEditor : EditorWindow
        {
            case GenericNoiseGenerationAlgorithm.Perlin:
                noiseArray = Perlin.Generate(imageSize, currentLayer.Scale, currentLayer.XOffset, currentLayer.YOffset,
-                   currentLayer.Amplitude);
+                   currentLayer.Amplitude,currentlyEditing.intSeed);
                break;
            case GenericNoiseGenerationAlgorithm.Worley:
                noiseArray = Worley.Generate(imageSize, currentLayer.Scale, currentLayer.XOffset, currentLayer.YOffset,
-                   currentLayer.Amplitude,currentlyEditing.seed);
+                   currentLayer.Amplitude,currentlyEditing.intSeed);
                break;
        }
 
