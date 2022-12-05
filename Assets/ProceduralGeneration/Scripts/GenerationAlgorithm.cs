@@ -7,7 +7,7 @@ public class GenerationAlgorithm : ScriptableObject
     public Vector2Int mapSize = new Vector2Int();
     private List<AlgorithmLayer> _algorithmLayers;
 
-    public int seed = 1;
+    public int seed = 1874293764;
 
     public GenerationAlgorithm()
     {

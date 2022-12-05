@@ -1,5 +1,4 @@
 using System;
-using ProceduralNoiseProject;
 using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
@@ -13,7 +12,6 @@ public enum EditorMode
 public class AlgorithmEditor : EditorWindow
 {
     private static AlgorithmEditor editorWindow;
-    private static EditorMode currentMode = EditorMode.SingleLayer;
     private static Texture2D proceduralImage;
     
     private static Rect mainImageRect;
@@ -62,16 +60,13 @@ public class AlgorithmEditor : EditorWindow
        GUILayout.Space(300);
        GUILayout.BeginVertical(EditorStyles.helpBox); //4
 
-       if(currentMode == EditorMode.AllLayers)
-           AllLayersImageGUI();
-       else
-           SingleLayerImageGUI();
+       ImageGUI();
        
        GUILayout.EndVertical();
        GUILayout.EndVertical();
    }
 
-   private void SingleLayerImageGUI()
+   private void ImageGUI()
    {
        var genType = (GenericNoiseGenerationAlgorithm)EditorGUILayout.EnumPopup("Generation Algorithm", currentLayer.GenerationAlgorithm);
        var scale = EditorGUILayout.FloatField("Scale",currentLayer.Scale);
@@ -94,39 +89,26 @@ public class AlgorithmEditor : EditorWindow
                break;
        }
    }
-   private void AllLayersImageGUI()
-   {
-   } 
    private void DetailsSection()
    {
        GUILayout.Space(20);
        
        GUILayout.BeginVertical(EditorStyles.helpBox,layersRect); //4
-       
-       if(currentMode == EditorMode.AllLayers)
-           AllLayersDetailsGUI();
-       else
-           SingleLayerDetailsGUI();
-       
+
+       DetailsGUI();
+
        GUILayout.Space(100);
        GUILayout.EndVertical(); //4
    }
-   private void SingleLayerDetailsGUI()
-   {
-       GUILayout.BeginHorizontal(EditorStyles.helpBox); //6
-       GUILayout.Space(60);
-       GUILayout.Label("Algorithm Mods");
-       GUILayout.Space(60);
-       GUILayout.EndHorizontal();//6
-   }
-   private void AllLayersDetailsGUI()
+   private void DetailsGUI()
    {
        GUILayout.BeginHorizontal(); //5
+       GUILayout.Space(40);
 
        GUILayout.BeginHorizontal(EditorStyles.helpBox); //6
-       GUILayout.Space(60);
+       GUILayout.Space(15);
        GUILayout.Label("Algorithm Layers");
-       GUILayout.Space(60);
+       GUILayout.Space(15);
        GUILayout.EndHorizontal();//6
 
        var algorithmLayers = currentlyEditing.GetAlgorithmLayers();
@@ -152,7 +134,6 @@ public class AlgorithmEditor : EditorWindow
 
        GUILayout.EndHorizontal(); //5
    }
-
    void RenderImage()
    {
        var imageSize = proceduralImage.width;

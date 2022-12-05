@@ -1,10 +1,6 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.PlayerLoop;
 
-namespace ProceduralNoiseProject
-{
     public class Worley
     {
         public enum VORONOI_DISTANCE
@@ -23,9 +19,7 @@ namespace ProceduralNoiseProject
         private const float K = 1.0f / 7.0f;
 
         private const float Ko = 3.0f / 7.0f;
-
-        private static float Jitter;
-
+        
         public static VORONOI_DISTANCE Distance;
 
         public static VORONOI_COMBINATION Combination;
@@ -44,8 +38,9 @@ namespace ProceduralNoiseProject
         /// </summary>
         static float Generate(float x, float y, float amplitude)
         {
-            int Pi0 = (int)Mathf.Floor(x);
-            int Pi1 = (int)Mathf.Floor(y);
+            var _jitter = 1f;
+            int Pi0 = (int)x;
+            int Pi1 = (int)y;
 
             float Pf0 = Frac(x);
             float Pf1 = Frac(y);
@@ -78,9 +73,9 @@ namespace ProceduralNoiseProject
                 oyy = Mod(Mathf.Floor(py * K), 7.0f) * K - Ko;
                 oyz = Mod(Mathf.Floor(pz * K), 7.0f) * K - Ko;
 
-                d0 = Distance2(Pf0, Pf1, OFFSET_F[i] + Jitter * oxx, -0.5f + Jitter * oyx);
-                d1 = Distance2(Pf0, Pf1, OFFSET_F[i] + Jitter * oxy, 0.5f + Jitter * oyy);
-                d2 = Distance2(Pf0, Pf1, OFFSET_F[i] + Jitter * oxz, 1.5f + Jitter * oyz);
+                d0 = Distance2(Pf0, Pf1, OFFSET_F[i] + _jitter * oxx, -0.5f + _jitter * oyx);
+                d1 = Distance2(Pf0, Pf1, OFFSET_F[i] + _jitter * oxy, 0.5f + _jitter * oyy);
+                d2 = Distance2(Pf0, Pf1, OFFSET_F[i] + _jitter * oxz, 1.5f + _jitter * oyz);
 
                 if (d0 < F0) { F2 = F1; F1 = F0; F0 = d0; }
                 else if (d0 < F1) { F2 = F1; F1 = d0; }
@@ -100,8 +95,7 @@ namespace ProceduralNoiseProject
         }
         public static float[,] Generate(int _size,float _scale,float _xCoord,float _yCoord,float _amplitude, int seed)
         {
-            Jitter = 1;
-            Perm = new PermutationTable(_size, _size,seed);
+            Perm = new PermutationTable(_size, 255,seed);
             var map = new float[_size,_size];
 
             for (var x = 0; x < _size; x++)
@@ -156,4 +150,3 @@ namespace ProceduralNoiseProject
             return 0;
         }
     }
-}

@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 
-namespace ProceduralNoiseProject
-{
     internal class PermutationTable
     {
 
@@ -67,4 +65,3 @@ namespace ProceduralNoiseProject
         }
 
     }
-}
