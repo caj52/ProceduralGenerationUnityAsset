@@ -27,7 +27,7 @@ public class AlgorithmEditor : EditorWindow
        proceduralImage = new Texture2D(300, 300);
        
        var xPosition = editorWindow.maxSize.x - proceduralImage.width - 20;
-       mainImageRect = new Rect(xPosition, 20, proceduralImage.width, proceduralImage.height);
+       mainImageRect = new Rect(xPosition, 30, proceduralImage.width, proceduralImage.height);
        layerImageRect = new Rect(0,0,80,80);
        currentlyEditing = CreateInstance<GenerationAlgorithm>();
    }
@@ -46,7 +46,6 @@ public class AlgorithmEditor : EditorWindow
        GUILayout.BeginHorizontal();//1
        GUILayout.Space(95);
        GUILayout.EndHorizontal();//1
-       GUILayout.Space(20);
        GUILayout.BeginHorizontal();//3
 
        DetailsGUI();
@@ -57,13 +56,10 @@ public class AlgorithmEditor : EditorWindow
 
    private void ImageArea()
    {
-       GUI.Box(mainImageRect,proceduralImage);
-    
        GUILayout.BeginVertical(); //4       
-       GUILayout.Space(300);
-
+       GUI.Box(mainImageRect,proceduralImage);
+       GUILayout.Space(310);
        ImageGUI();
-       
        GUILayout.EndVertical();
    }
 
@@ -74,6 +70,7 @@ public class AlgorithmEditor : EditorWindow
        var xOffset = EditorGUILayout.FloatField("Coordinate X",currentLayer.XOffset);
        var yOffset = EditorGUILayout.FloatField("Coordinate Y",currentLayer.YOffset);
        var amplitude = Math.Clamp(EditorGUILayout.FloatField("Amplitude",currentLayer.Amplitude),0,1);
+
 
        NoiseVariationsGUI();
 
@@ -92,11 +89,7 @@ public class AlgorithmEditor : EditorWindow
    }
    private void DetailsGUI()
    {
-       GUILayout.Space(20);
        GUILayout.BeginVertical(EditorStyles.helpBox,layersRect); //4
-       GUILayout.BeginHorizontal(); //5
-       GUILayout.Space(40);
-
        ////////[ALGORITHM LAYERS]///////////
        GUILayout.BeginHorizontal(EditorStyles.helpBox); //6
        GUILayout.Space(15);
@@ -110,22 +103,21 @@ public class AlgorithmEditor : EditorWindow
        for (int x = 0; x < layerCount; x++)
        {
            var layer = algorithmLayers[x];
-       
-           GUILayout.BeginVertical();//7
-           GUILayout.Space(100);
-           
+
+           GUILayout.Space(60);
            layerImageRect.position = new Vector2(23, (x * 30) + 60);
            GUI.Box(layerImageRect,proceduralImage);
            
-           var layerStrength = Mathf.RoundToInt(layer.layerStrength * 100);
-           layerStrength = EditorGUILayout.IntSlider(layerStrength, 0, 100);
-           layer.SetLayerStrength(layerStrength / 100f);
+           GUILayout.BeginHorizontal();
+           GUILayout.Space(100);
 
-           GUILayout.EndVertical();//7
+           var layerStrength = Mathf.RoundToInt(layer.layerStrength * 100);
+           GUILayoutOption[] layerSlider = new GUILayoutOption[] {GUILayout.Width(125f)};
+           layerStrength = EditorGUILayout.IntSlider(layerStrength, 0, 100,layerSlider);
+           layer.SetLayerStrength(layerStrength / 100f);
+           GUILayout.EndHorizontal();
        }
 
-       GUILayout.EndHorizontal(); //5
-       GUILayout.Space(100);
        GUILayout.EndVertical(); //4
    }
    void RenderImage()
