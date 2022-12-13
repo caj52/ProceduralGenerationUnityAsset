@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
@@ -13,8 +14,13 @@ public class AlgorithmEditor : EditorWindow
     private static Rect layerImageRect;
     private static int layersRectHeight => 300;//currentlyEditing.GetAlgorithmLayers().Count * 145;
 
+    private static int imageViewMode;
+
     private static GenerationAlgorithm currentlyEditing;
     private static AlgorithmLayer currentLayer => currentlyEditing.GetAlgorithmLayers()[0];
+
+    private static bool updateNoise = false;
+    private static int mouseOverLayer = -1;
 
     GUILayoutOption[] layersRect = new GUILayoutOption[] {GUILayout.Width(240f), GUILayout.Height(layersRectHeight) };
     [MenuItem("Tools / Noise Factory")]
@@ -31,20 +37,25 @@ public class AlgorithmEditor : EditorWindow
        layerImageRect = new Rect(0,0,80,80);
        currentlyEditing = CreateInstance<GenerationAlgorithm>();
    }
-   
+
+   private void Update()
+   {
+       updateNoise = false;
+   }
    private void OnGUI()
    {
        Repaint();
 
        ////////[SEED [____]]///////////
-       GUILayout.BeginHorizontal(EditorStyles.helpBox); 
+       GUILayout.BeginHorizontal(EditorStyles.helpBox);
        currentlyEditing.seed = EditorGUILayout.TextField("Seed", currentlyEditing.seed, GUIStyle.none);
-       currentlyEditing.SetIntSeed();
+       if (updateNoise)
+           currentlyEditing.SetIntSeed();
+
        GUILayout.EndHorizontal();
        ///////////////////////////////////
        
        GUILayout.BeginHorizontal();//1
-       GUILayout.Space(95);
        GUILayout.EndHorizontal();//1
        GUILayout.BeginHorizontal();//3
 
@@ -53,30 +64,43 @@ public class AlgorithmEditor : EditorWindow
        
        GUILayout.EndHorizontal();//3
    }
-
+   
    private void ImageArea()
    {
-       GUILayout.BeginVertical(); //4       
+       GUILayout.BeginVertical(); //4     
+       if (updateNoise)
+       {
+           var noise = imageViewMode == 0
+               ? NoiseFactory.GenerateLayeredNoise((int)mainImageRect.width, currentlyEditing)
+               : NoiseFactory.GenerateGenericNoise((int)mainImageRect.width, currentlyEditing, currentLayer);
+
+           proceduralImage.SetPixels(GetPixelsFromNoiseArray((int)mainImageRect.width, noise));
+           proceduralImage.Apply();
+       }
+
        GUI.Box(mainImageRect,proceduralImage);
        GUILayout.Space(310);
        ImageGUI();
        GUILayout.EndVertical();
    }
-
+   
    private void ImageGUI()
    {
+       var startingSettings = new [] {(int)currentLayer.GenerationAlgorithm,currentLayer.Scale,currentLayer.XOffset,currentLayer.YOffset,currentLayer.Amplitude};
        var genType = (GenericNoiseGenerationAlgorithm)EditorGUILayout.EnumPopup("Generation Algorithm", currentLayer.GenerationAlgorithm);
        var scale = EditorGUILayout.FloatField("Scale",currentLayer.Scale);
        var xOffset = EditorGUILayout.FloatField("Coordinate X",currentLayer.XOffset);
        var yOffset = EditorGUILayout.FloatField("Coordinate Y",currentLayer.YOffset);
        var amplitude = Math.Clamp(EditorGUILayout.FloatField("Amplitude",currentLayer.Amplitude),0,1);
 
-
+       var postEditSettings = new [] {(int)currentLayer.GenerationAlgorithm,currentLayer.Scale,currentLayer.XOffset,currentLayer.YOffset,currentLayer.Amplitude};
+       if (postEditSettings != startingSettings)
+           updateNoise = true;
+       
        NoiseVariationsGUI();
 
        currentLayer.SetAlgorithmVariables(genType,scale,xOffset,yOffset,amplitude);
    }
-
    private void NoiseVariationsGUI()
    {
        switch (currentLayer.GenerationAlgorithm)
@@ -97,66 +121,63 @@ public class AlgorithmEditor : EditorWindow
        GUILayout.Space(15);
        GUILayout.EndHorizontal();//6
        ////////////////////////////////////
-
+       
        var algorithmLayers = currentlyEditing.GetAlgorithmLayers();
+       var startingLayers = new List<AlgorithmLayer>(algorithmLayers);
        var layerCount = algorithmLayers.Count;
        for (int x = 0; x < layerCount; x++)
        {
+           GUILayout.Space(60);
            var layer = algorithmLayers[x];
 
-           GUILayout.Space(60);
-           layerImageRect.position = new Vector2(23, (x * 30) + 60);
-           GUI.Box(layerImageRect,proceduralImage);
-           
-           GUILayout.BeginHorizontal();
+           var layerNoiseArray = NoiseFactory.GenerateGenericNoise((int)layerImageRect.width,currentlyEditing,layer);
+           var pixels = GetPixelsFromNoiseArray((int)layerImageRect.width,layerNoiseArray);
+           layerImageRect.position = new Vector2(15, (x * 80) + 60);
+
+           var layerImage = new Texture2D(80,80);
+           layerImage.SetPixels(pixels);
+           layerImage.Apply();
+           GUI.Box(layerImageRect,layerImage);
+
+           var mousePosition = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+           var mouseInArea = mousePosition.x > layerImageRect.position.x && mousePosition.x < layerImageRect.position.x + layerImage.width;
+
+           if(mouseInArea)
+               GUILayout.BeginHorizontal(EditorStyles.helpBox);
+           else
+               GUILayout.BeginHorizontal();
+
            GUILayout.Space(100);
 
            var layerStrength = Mathf.RoundToInt(layer.layerStrength * 100);
-           GUILayoutOption[] layerSlider = new GUILayoutOption[] {GUILayout.Width(125f)};
+           GUILayoutOption[] layerSlider = new GUILayoutOption[] {GUILayout.Width(120f)};
            layerStrength = EditorGUILayout.IntSlider(layerStrength, 0, 100,layerSlider);
            layer.SetLayerStrength(layerStrength / 100f);
            GUILayout.EndHorizontal();
        }
 
+       if (startingLayers != algorithmLayers)
+           updateNoise = true;
+
+       GUILayout.Space(60);
+
+       if (GUILayout.Button("Add Layer"))
+           currentlyEditing.AddAlgorithmLayer(new AlgorithmLayer());
+       
+
        GUILayout.EndVertical(); //4
    }
-   void RenderImage()
-   {
-       var imageSize = proceduralImage.width;
-       var noiseArray = GenerateGenericNoise(imageSize);
-        var pixelsInPerlin = new Color[(int)Math.Pow(imageSize,2)];
-        for (int y = 0; y < imageSize; y++)
-        {
-            for (int x = 0; x < imageSize; x++)
-            {
-                float sample = noiseArray[x, y];
-                pixelsInPerlin[x+(y*imageSize)] = new Color(sample,sample,sample);
-            }
-        }
-        proceduralImage.SetPixels(pixelsInPerlin);
-        proceduralImage.Apply();
-    }
 
-   float[,] GenerateGenericNoise(int imageSize)
+   Color[] GetPixelsFromNoiseArray(int imageSize,float[,] noiseArray)
    {
-       var noiseArray = new float[imageSize,imageSize];
-       switch (currentLayer.GenerationAlgorithm)
+       var pixelsInArray = new Color[(int)Math.Pow(imageSize, 2)];
+       for (var y = 0; y < imageSize; y++)
+       for (var x = 0; x < imageSize; x++)
        {
-           case GenericNoiseGenerationAlgorithm.Perlin:
-               noiseArray = Perlin.Generate(imageSize, currentLayer.Scale, currentLayer.XOffset, currentLayer.YOffset,
-                   currentLayer.Amplitude,currentlyEditing.intSeed);
-               break;
-           case GenericNoiseGenerationAlgorithm.Worley:
-               noiseArray = Worley.Generate(imageSize, currentLayer.Scale, currentLayer.XOffset, currentLayer.YOffset,
-                   currentLayer.Amplitude,currentlyEditing.intSeed);
-               break;
+           var sample = noiseArray[x, y];
+           pixelsInArray[x+(y*imageSize)] = new Color(sample,sample,sample);
        }
-
-       return noiseArray;
+       return pixelsInArray;
    }
-    void Update()
-    {
-        RenderImage();
-    }
 }
 #endif

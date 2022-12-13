@@ -7,7 +7,7 @@ using UnityEngine;
 public class GenerationAlgorithm : ScriptableObject
 {
     public Vector2Int mapSize = new Vector2Int();
-    private List<AlgorithmLayer> _algorithmLayers;
+    public List<AlgorithmLayer> _algorithmLayers;
 
     public string seed = "1874293764";
 
@@ -32,7 +32,7 @@ public class GenerationAlgorithm : ScriptableObject
         var defaultLayer = new AlgorithmLayer(GenericNoiseGenerationAlgorithm.Perlin, 1, 0, 0, 1);
         AddAlgorithmLayer(defaultLayer);
     }
-    void AddAlgorithmLayer(AlgorithmLayer newLayer)
+    public void AddAlgorithmLayer(AlgorithmLayer newLayer)
     {
         _algorithmLayers.Add(newLayer);
     }
@@ -45,13 +45,15 @@ public class GenerationAlgorithm : ScriptableObject
 public class AlgorithmLayer
 {
     public GenericNoiseGenerationAlgorithm GenerationAlgorithm { get; private set;}
-    public float Scale {get; private set;}
+    public float Scale { get; private set; } = 1;
     public float XOffset {get; private set;}
     public float YOffset {get; private set;}
-    public float Amplitude {get; private set;}
+    public float Amplitude {get; private set;} = 1;
     
-    public float layerStrength {get; private set;}
-
+    public float layerStrength {get; private set;} = 1;
+    public AlgorithmLayer()
+    {
+    }
     public AlgorithmLayer(GenericNoiseGenerationAlgorithm _genAlgorithm,float _scale, float _xOffset,float _yOffset,float _amplitude)
     {
         GenerationAlgorithm = _genAlgorithm;
@@ -76,13 +78,15 @@ public class AlgorithmLayer
     {
         layerStrength = newStrength;
     }
+    
+    
 }
 
 public enum GenericNoiseGenerationAlgorithm
 {
+    Perlin,
     Random,
     Simplex,
-    Perlin,
     Worley,
     Jarnagin
 }
