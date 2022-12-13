@@ -17,10 +17,8 @@ public class AlgorithmEditor : EditorWindow
     private static int imageViewMode;
 
     private static GenerationAlgorithm currentlyEditing;
-    private static AlgorithmLayer currentLayer => currentlyEditing.GetAlgorithmLayers()[0];
-
+    private static AlgorithmLayer currentLayer;
     private static bool updateNoise = false;
-    private static int mouseOverLayer = -1;
 
     GUILayoutOption[] layersRect = new GUILayoutOption[] {GUILayout.Width(240f), GUILayout.Height(layersRectHeight) };
     [MenuItem("Tools / Noise Factory")]
@@ -36,6 +34,7 @@ public class AlgorithmEditor : EditorWindow
        mainImageRect = new Rect(xPosition, 30, proceduralImage.width, proceduralImage.height);
        layerImageRect = new Rect(0,0,80,80);
        currentlyEditing = CreateInstance<GenerationAlgorithm>();
+       currentLayer = currentlyEditing._algorithmLayers[0];
    }
 
    private void Update()
@@ -127,26 +126,31 @@ public class AlgorithmEditor : EditorWindow
        var layerCount = algorithmLayers.Count;
        for (int x = 0; x < layerCount; x++)
        {
-           GUILayout.Space(60);
            var layer = algorithmLayers[x];
-
            var layerNoiseArray = NoiseFactory.GenerateGenericNoise((int)layerImageRect.width,currentlyEditing,layer);
            var pixels = GetPixelsFromNoiseArray((int)layerImageRect.width,layerNoiseArray);
-           layerImageRect.position = new Vector2(15, (x * 80) + 60);
-
+           layerImageRect.position = new Vector2(15, (x * 82) + 60);
            var layerImage = new Texture2D(80,80);
            layerImage.SetPixels(pixels);
            layerImage.Apply();
            GUI.Box(layerImageRect,layerImage);
-
+           var rectScreenPosition = layerImageRect.position + editorWindow.position.position;
            var mousePosition = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
-           var mouseInArea = mousePosition.x > layerImageRect.position.x && mousePosition.x < layerImageRect.position.x + layerImage.width;
-
-           if(mouseInArea)
-               GUILayout.BeginHorizontal(EditorStyles.helpBox);
+           var mouseInArea = mousePosition.x > rectScreenPosition.x
+                             && mousePosition.x < rectScreenPosition.x + layerImage.width
+                             && mousePosition.y > rectScreenPosition.y
+                             && mousePosition.y < rectScreenPosition.y + layerImage.height;
+           if (mouseInArea || currentLayer == layer)
+           {
+               GUILayout.BeginVertical(EditorStyles.helpBox);
+               if (Input.GetMouseButton(0))
+                   currentLayer = layer;
+           }
            else
-               GUILayout.BeginHorizontal();
-
+               GUILayout.BeginVertical();
+           GUILayout.Space(60);
+           
+           GUILayout.BeginHorizontal();
            GUILayout.Space(100);
 
            var layerStrength = Mathf.RoundToInt(layer.layerStrength * 100);
@@ -154,6 +158,7 @@ public class AlgorithmEditor : EditorWindow
            layerStrength = EditorGUILayout.IntSlider(layerStrength, 0, 100,layerSlider);
            layer.SetLayerStrength(layerStrength / 100f);
            GUILayout.EndHorizontal();
+           GUILayout.EndVertical();
        }
 
        if (startingLayers != algorithmLayers)
@@ -163,7 +168,6 @@ public class AlgorithmEditor : EditorWindow
 
        if (GUILayout.Button("Add Layer"))
            currentlyEditing.AddAlgorithmLayer(new AlgorithmLayer());
-       
 
        GUILayout.EndVertical(); //4
    }
