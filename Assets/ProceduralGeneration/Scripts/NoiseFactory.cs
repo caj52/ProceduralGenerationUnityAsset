@@ -4,7 +4,7 @@ using UnityEngine;
 
 public static class NoiseFactory
 {
-   public static float[,] GenerateLayeredNoise(int imageSize,GenerationAlgorithm noiseAlgorithm)
+   public static float[,] GenerateLayeredNoise(int imageSize,NoiseAlgorithm noiseAlgorithm)
    {
       var noiseMap = new float[imageSize,imageSize];
       var totalLayerStrengths = 0f;
@@ -22,7 +22,7 @@ public static class NoiseFactory
 
       return noiseMap;
    }
-   public static float[,] GenerateGenericNoise(int imageSize, GenerationAlgorithm algorithm,AlgorithmLayer layer)
+   public static float[,] GenerateGenericNoise(int imageSize, NoiseAlgorithm algorithm,AlgorithmLayer layer)
    {
       var noiseArray = new float[imageSize,imageSize];
       switch (layer.GenerationAlgorithm)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
@@ -13,15 +14,17 @@ public class AlgorithmEditor : EditorWindow
     private static Rect mainImageRect;
     private static Rect layerImageRect;
     private static int layersRectHeight => 300;//currentlyEditing.GetAlgorithmLayers().Count * 145;
-
     private static int imageViewMode = 1;
 
-    private static GenerationAlgorithm currentlyEditing;
+    private static NoiseAlgorithm currentlyEditing;
     private static AlgorithmLayer currentLayer;
 
     private static float refreshTimer = .1f;
     private static float lastImageRefresh;
-    
+
+    private bool algorithmFoldout;
+    private int selected = 0;
+
     GUILayoutOption[] layersRect = new GUILayoutOption[] {GUILayout.Width(240f), GUILayout.Height(layersRectHeight) };
     [MenuItem("Tools / Noise Factory")]
    
@@ -35,21 +38,36 @@ public class AlgorithmEditor : EditorWindow
        var xPosition = editorWindow.maxSize.x - proceduralImage.width - 20;
        mainImageRect = new Rect(xPosition, 30, proceduralImage.width, proceduralImage.height);
        layerImageRect = new Rect(0,0,80,80);
-       currentlyEditing = CreateInstance<GenerationAlgorithm>();
+       currentlyEditing = CreateInstance<NoiseAlgorithm>();
        currentLayer = currentlyEditing._algorithmLayers[0];
    }
 
    private void OnGUI()
    {
        Repaint();
-
+       
        ////////[SEED [____]]///////////
        GUILayout.BeginHorizontal(EditorStyles.helpBox);
+ 
+       var noiseAlgorithmsInProject = GetAllNoiseAlgorithmsInProject();
+       var namesList = noiseAlgorithmsInProject.Select(noiseAlgorithm => noiseAlgorithm.name).ToList();
+       namesList.Add("New Algorithm");
+       selected = EditorGUILayout.Popup("", selected, namesList.ToArray(), new []{GUILayout.Width(20)});
+
+       if (selected == noiseAlgorithmsInProject.Count)
+       {
+           var amountOfNewNames = namesList.Count(n => n.Contains("New Noise Algorithm"));
+           AssetDatabase.CreateAsset(CreateInstance<NoiseAlgorithm>(), $"Assets/New Noise Algorithm {amountOfNewNames}.asset");
+           GUILayout.EndHorizontal();
+           return;
+       }
+
+       currentlyEditing = noiseAlgorithmsInProject[selected];
+       currentlyEditing.name = EditorGUILayout.TextArea(currentlyEditing.name);
        currentlyEditing.seed = EditorGUILayout.TextField("Seed", currentlyEditing.seed, GUIStyle.none);
        currentlyEditing.SetIntSeed();
 
-       var buttonText = (imageViewMode == 0) ? "Single Layer View" : "Multi-Layer View";
-       if (GUILayout.Button($"Switch View To {buttonText}"))
+       if (GUILayout.Button($"Switch View"))
            imageViewMode = (imageViewMode == 0) ? 1 : 0;
        GUILayout.EndHorizontal();
        ///////////////////////////////////
@@ -63,14 +81,14 @@ public class AlgorithmEditor : EditorWindow
        
        GUILayout.EndHorizontal();//3
    }
-   
+
    private void ImageArea()
    {
        GUILayout.BeginVertical(); //4     
 
        if (Time.time - refreshTimer > lastImageRefresh)
        {
-           var noise = imageViewMode == 0
+           var noise = (imageViewMode == 0 || currentLayer == null)
                ? NoiseFactory.GenerateLayeredNoise((int)mainImageRect.width, currentlyEditing)
                : NoiseFactory.GenerateGenericNoise((int)mainImageRect.width, currentlyEditing, currentLayer);
            proceduralImage.SetPixels(GetPixelsFromNoiseArray((int)mainImageRect.width, noise));
@@ -87,15 +105,29 @@ public class AlgorithmEditor : EditorWindow
    
    private void ImageGUI()
    {
-       var genType = (GenericNoiseGenerationAlgorithm)EditorGUILayout.EnumPopup("Generation Algorithm", currentLayer.GenerationAlgorithm);
-       var scale = EditorGUILayout.FloatField("Scale",currentLayer.Scale);
-       var xOffset = EditorGUILayout.FloatField("Coordinate X",currentLayer.XOffset);
-       var yOffset = EditorGUILayout.FloatField("Coordinate Y",currentLayer.YOffset);
-       var amplitude = Math.Clamp(EditorGUILayout.FloatField("Amplitude",currentLayer.Amplitude),0,1);
+       var genType = GenericNoiseGenerationAlgorithm.Perlin;
+       var scale = 1f;
+       var xOffset = 0f;
+       var yOffset = 0f;
+       var amplitude = 1f;
+       
+       if (currentLayer == null)
+       { }
+       else
+       {
+           genType =
+               (GenericNoiseGenerationAlgorithm)EditorGUILayout.EnumPopup("Generation Algorithm", currentLayer.GenerationAlgorithm);
+           scale = EditorGUILayout.FloatField("Scale", currentLayer.Scale);
+           xOffset = EditorGUILayout.FloatField("Coordinate X", currentLayer.XOffset);
+           yOffset = EditorGUILayout.FloatField("Coordinate Y", currentLayer.YOffset);
+           amplitude = Math.Clamp(EditorGUILayout.FloatField("Amplitude", currentLayer.Amplitude), 0, 1);
+       }
+
+       if (currentLayer == null)
+           return;
        
        NoiseVariationsGUI();
-
-       currentLayer.SetAlgorithmVariables(genType,scale,xOffset,yOffset,amplitude);
+       currentLayer.SetAlgorithmVariables(genType, scale, xOffset, yOffset, amplitude);
    }
    private void NoiseVariationsGUI()
    {
@@ -106,6 +138,13 @@ public class AlgorithmEditor : EditorWindow
                Worley.Combination = (Worley.VORONOI_COMBINATION)EditorGUILayout.EnumPopup("Combination Setting",Worley.Combination);
                break;
        }
+   }
+   List<NoiseAlgorithm> GetAllNoiseAlgorithmsInProject()
+   {
+       return AssetDatabase.FindAssets($"t: {nameof(NoiseAlgorithm)}").ToList()
+           .Select(AssetDatabase.GUIDToAssetPath)
+           .Select(AssetDatabase.LoadAssetAtPath<NoiseAlgorithm>)
+           .ToList();
    }
    private void DetailsGUI()
    {
@@ -119,7 +158,6 @@ public class AlgorithmEditor : EditorWindow
        ////////////////////////////////////
        
        var algorithmLayers = currentlyEditing.GetAlgorithmLayers();
-       var startingLayers = new List<AlgorithmLayer>(algorithmLayers);
        var layerCount = algorithmLayers.Count;
        for (int x = 0; x < layerCount; x++)
        {
@@ -143,8 +181,8 @@ public class AlgorithmEditor : EditorWindow
            if (mouseInArea || currentLayer == layer)
            {
                GUILayout.BeginVertical(EditorStyles.helpBox);
-               if (Event.current.type == EventType.MouseUp)
-                   currentLayer = layer;
+               if (mouseInArea && Event.current.type == EventType.MouseUp)
+                   currentLayer = (currentLayer == layer)? null : layer;
            }
            else
                GUILayout.BeginVertical();
