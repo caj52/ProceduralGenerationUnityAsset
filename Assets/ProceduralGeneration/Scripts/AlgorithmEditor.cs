@@ -26,6 +26,8 @@ public class AlgorithmEditor : EditorWindow
     private int selected = 0;
 
     GUILayoutOption[] layersRect = new GUILayoutOption[] {GUILayout.Width(240f), GUILayout.Height(layersRectHeight) };
+    GUILayoutOption[] deleteLayer = new GUILayoutOption[] {GUILayout.Width(20f), GUILayout.Height(20) };
+
     [MenuItem("Tools / Noise Factory")]
    
    public static void ShowWindow()
@@ -37,7 +39,7 @@ public class AlgorithmEditor : EditorWindow
        
        var xPosition = editorWindow.maxSize.x - proceduralImage.width - 20;
        mainImageRect = new Rect(xPosition, 30, proceduralImage.width, proceduralImage.height);
-       layerImageRect = new Rect(0,0,80,80);
+       layerImageRect = new Rect(0,0,100,100);
        currentlyEditing = CreateInstance<NoiseAlgorithm>();
        currentLayer = currentlyEditing._algorithmLayers[0];
    }
@@ -161,12 +163,12 @@ public class AlgorithmEditor : EditorWindow
        var layerCount = algorithmLayers.Count;
        for (int x = 0; x < layerCount; x++)
        {
-           layerImageRect.position = new Vector2(15, (x * 82) + 60);
+           layerImageRect.position = new Vector2(15, (x * 102) + 60);
 
            var layer = algorithmLayers[x];
            var layerNoiseArray = NoiseFactory.GenerateGenericNoise((int)layerImageRect.width,currentlyEditing,layer);
            var pixels = GetPixelsFromNoiseArray((int)layerImageRect.width,layerNoiseArray);
-           var layerImage = new Texture2D(80,80);
+           var layerImage = new Texture2D(100,100);
            var rectScreenPosition = layerImageRect.position + editorWindow.position.position;
            var mousePosition = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
            var mouseInArea = mousePosition.x > rectScreenPosition.x
@@ -177,7 +179,7 @@ public class AlgorithmEditor : EditorWindow
            layerImage.SetPixels(pixels);
            layerImage.Apply();
            GUI.Box(layerImageRect,layerImage);
-           
+
            if (mouseInArea || currentLayer == layer)
            {
                GUILayout.BeginVertical(EditorStyles.helpBox);
@@ -187,14 +189,27 @@ public class AlgorithmEditor : EditorWindow
            else
                GUILayout.BeginVertical();
            
+           GUILayout.BeginHorizontal();
+           GUILayout.Space(220);
+           if (GUILayout.Button("X",deleteLayer))
+           {
+               algorithmLayers.RemoveAt(x);
+               GUILayout.EndHorizontal();
+               GUILayout.EndVertical();
+               GUILayout.EndVertical();
+               return;
+           }
+           GUILayout.EndHorizontal();
+           
            GUILayout.Space(60);
            GUILayout.BeginHorizontal();
-           GUILayout.Space(100);
+           GUILayout.Space(120);
 
            var layerStrength = Mathf.RoundToInt(layer.layerStrength * 100);
            GUILayoutOption[] layerSlider = new GUILayoutOption[] {GUILayout.Width(120f)};
            layerStrength = EditorGUILayout.IntSlider(layerStrength, 0, 100,layerSlider);
            layer.SetLayerStrength(layerStrength / 100f);
+
            GUILayout.EndHorizontal();
            GUILayout.EndVertical();
        }
