@@ -19,8 +19,11 @@ public class AlgorithmEditor : EditorWindow
     private static NoiseAlgorithm currentlyEditing;
     private static AlgorithmLayer currentLayer;
 
-    private static float refreshTimer = .1f;
-    private static float lastImageRefresh;
+    private static float imageRefreshTimer = .1f;
+    private static float executionSpeedRefreshTimer = 1;
+    private static float lastExecutionSpeedTimeRefresh;
+    private static float lastImageTimeRefresh;
+    private static float averageLayerExecutionSpeed;
 
     private bool algorithmFoldout;
     private int selected = 0;
@@ -71,6 +74,7 @@ public class AlgorithmEditor : EditorWindow
 
        if (GUILayout.Button($"Switch View"))
            imageViewMode = (imageViewMode == 0) ? 1 : 0;
+       
        GUILayout.EndHorizontal();
        ///////////////////////////////////
        
@@ -86,17 +90,25 @@ public class AlgorithmEditor : EditorWindow
 
    private void ImageArea()
    {
-       GUILayout.BeginVertical(); //4     
+       GUILayout.BeginVertical(); //4   
+       var currentTime = Time.realtimeSinceStartup;
 
-       if (Time.time - refreshTimer > lastImageRefresh)
+       if (lastImageTimeRefresh < currentTime - imageRefreshTimer)
        {
+           lastImageTimeRefresh = currentTime;
+           
            var noise = (imageViewMode == 0 || currentLayer == null)
                ? NoiseFactory.GenerateLayeredNoise((int)mainImageRect.width, currentlyEditing)
                : NoiseFactory.GenerateGenericNoise((int)mainImageRect.width, currentlyEditing, currentLayer);
+
+           if (lastExecutionSpeedTimeRefresh < currentTime - executionSpeedRefreshTimer)
+           {
+               averageLayerExecutionSpeed = Time.realtimeSinceStartup - lastImageTimeRefresh;
+               lastExecutionSpeedTimeRefresh = currentTime;
+           }
+
            proceduralImage.SetPixels(GetPixelsFromNoiseArray((int)mainImageRect.width, noise));
            proceduralImage.Apply();
-
-           lastImageRefresh = Time.time;
        }
 
        GUI.Box(mainImageRect,proceduralImage);
@@ -112,6 +124,11 @@ public class AlgorithmEditor : EditorWindow
        var xOffset = 0f;
        var yOffset = 0f;
        var amplitude = 1f;
+
+       var executionSpeedFocus = currentLayer == null ? "Algorithm" : "Layer";
+       EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+       GUILayout.Label($"Average {executionSpeedFocus} Execution Speed: {averageLayerExecutionSpeed} ms");
+       EditorGUILayout.EndHorizontal();
        
        if (currentLayer == null)
        { }

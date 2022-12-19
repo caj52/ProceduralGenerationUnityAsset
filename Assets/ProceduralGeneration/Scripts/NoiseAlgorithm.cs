@@ -83,7 +83,7 @@ public class AlgorithmLayer
 public enum GenericNoiseGenerationAlgorithm
 {
     Perlin,
-    Random,
+    UnityRandom,
     Simplex,
     Worley,
     Jarnagin
